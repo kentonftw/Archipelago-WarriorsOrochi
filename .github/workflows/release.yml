@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build the .apworld
+        run: |
+          mkdir -p dist
+          cd worlds
+          zip -r ../dist/warriors_orochi.apworld warriors_orochi -x "*/__pycache__/*"
+
+      - name: Get Archipelago (needed to run the tests and build the tracker)
+        run: |
+          git clone --depth 1 https://github.com/ArchipelagoMW/Archipelago.git ap
+          pip install -r ap/requirements.txt pillow pytest
+          cp -r worlds/warriors_orochi ap/worlds/
+
+      - name: Run the world's tests
+        working-directory: ap
+        run: python -m pytest -q worlds/warriors_orochi/test
+
+      - name: Build the PopTracker pack
+        working-directory: ap
+        run: |
+          PYTHONPATH=. python ../tools/make_poptracker.py ../build/pack
+          cp -r ../tools/poptracker_static/. ../build/pack/
+          cd ../build/pack && zip -r ../../dist/warriors_orochi_poptracker.zip .
+
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/warriors_orochi.apworld
+            dist/warriors_orochi_poptracker.zip
+          body: |
+            Install: double-click `warriors_orochi.apworld` (Archipelago 0.6.7+).
+            Tracker: put `warriors_orochi_poptracker.zip` in PopTracker's `packs` folder.
+            See the README for setup and options.

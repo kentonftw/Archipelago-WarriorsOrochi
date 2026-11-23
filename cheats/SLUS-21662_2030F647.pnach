@@ -1,0 +1,27 @@
+gametitle=Warriors Orochi (NTSC-U) [SLUS-21662]
+comment=Raw codes decrypted from the CodeBreaker list for Archipelago testing
+
+[Testing\Infinite Health P1]
+author=CodeBreaker (decrypted)
+patch=1,EE,004DD5C2,short,0190
+
+[Testing\Infinite Musou P1]
+author=CodeBreaker (decrypted)
+patch=1,EE,004DD5C8,short,00C8
+
+[Testing\Always Have All Powerups P1 (Attack x2 etc.)]
+author=CodeBreaker (decrypted, OR converted to a plain byte write)
+patch=1,EE,004CD598,byte,1E
+patch=1,EE,004CD5A0,word,00000708
+patch=1,EE,004CD5A4,word,00000708
+patch=1,EE,004CD5A8,word,00000708
+patch=1,EE,004CD5AC,word,00000708
+
+[Testing\Infinite Mission Time]
+author=CodeBreaker (decrypted)
+patch=1,EE,001F19FC,word,AC80D7C8
+
+[Testing\Attack 5000 P1 (kill almost anything in one hit)]
+author=Archipelago testing (found live: player attack stat)
+comment=Holds the active character's Attack at 5000. Allies are not affected.
+patch=1,EE,004DD5CA,short,1388
