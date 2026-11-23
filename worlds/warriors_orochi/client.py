@@ -68,6 +68,7 @@ class WarriorsOrochiContext(CommonContext):
         self.link_kill = False       # our current death came from DeathLink: don't echo it
         self.doomed = False          # DeathLink received: HP is held at 1 until the next hit lands
         self.notice_key = None       # (stage record, text) currently written into the game's notices
+        self.waiting_for_save = False
 
     # -- server side ------------------------------------------------------------
     async def server_auth(self, password_requested: bool = False):
@@ -291,7 +292,26 @@ class WarriorsOrochiContext(CommonContext):
             self.write_notice(MSG_NEW_SCENARIO, text)
         self.notice_key = key
 
+    def save_loaded(self) -> bool:
+        """True once a real save is in memory. Before that (boot, BIOS, title screen before loading)
+        the save area is blank: zeros read as "every ability earned" and anything we write there
+        is wiped by the load. Stage 1 of every story is open (2) or cleared (3) in every real save,
+        even a brand-new one, and we never write it ourselves."""
+        addrs = [STAGE_RECORDS + STORY_RECORDS[(s, 1)] * STAGE_RECORD_SIZE + STAGE_STATUS_OFFSET for s in STORIES]
+        if any(v not in (STAGE_STATUS_OPEN, STAGE_STATUS_CLEARED) for v in self.pine.read8_many(addrs)):
+            return False
+        levels = self.pine.read_bytes(ABILITY_LEVELS, len(ABILITIES))
+        return all(v < 10 or v == ABILITY_NONE for v in levels)
+
     async def game_tick(self) -> None:
+        if not self.save_loaded():
+            if not self.waiting_for_save:
+                logger.info("Waiting for you to load a save file in Warriors Orochi...")
+                self.waiting_for_save = True
+            return
+        if self.waiting_for_save:
+            logger.info("Save file loaded.")
+            self.waiting_for_save = False
         names = self.received_names()
 
         # 1. Character roster: the game owns non-shuffled bits, the server owns shuffled ones.
