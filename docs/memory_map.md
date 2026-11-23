@@ -111,3 +111,15 @@ Stage record status byte: 0 = locked/hidden, 2 = open, 3 = cleared. Writing it d
 0 Vitality 1 Focus 2 Potence 3 Fortitude 4 Impulse 5 Cavalier | 6 Karma 7 Power 8 Speed 9 Technique
 10 Boost 11 Awakening | 12 Acclaim 13 Recuperate 14 Conserve 15 Adrenalin 16 Recover 17 Refill
 Character record +0x12 u16 grows with use (Hideyoshi 8000, Akechi 1098): maybe ability/proficiency points.
+
+## Publishing
+GitHub: https://github.com/kentonftw/Archipelago-WarriorsOrochi (public, MIT).
+To release: bump world_version in worlds/warriors_orochi/archipelago.json and push to main; the
+Release workflow runs the tests, builds the .apworld and PopTracker zip, and publishes vX.Y.Z.
+
+## In-game notices (confirmed 2026-11-22, Shu Stage 1)
+Pop-up text pointer table at 0x331F18 (entries: new ability 0x32E6D0, unique item 0x32E700, new weapon 0x32E760,
+"%s has become available for use." 0x32E780, "A new scenario has become available." 0x32E7B0).
+Overwriting 0x32E780 during battle changed the NEW CHARACTER screen text; "[01word]" renders red.
+0x4CD4F4 (and 0x4CD4F8) = stage record of the battle being played (35 = Shu 1, 47 = Wei 1).
+Battle message templates (stage data, ~0x1F4E3C0): "[03%s] has been defeated!" etc.

@@ -9,7 +9,8 @@ from CommonClient import (ClientCommandProcessor, CommonContext, get_base_parser
                           handle_url_arg, logger, server_loop)
 from NetUtils import ClientStatus
 
-from .data import (ABILITIES, ABILITIES_IN_USE, ABILITY_LEVELS, ABILITY_NONE, ABILITY_SLOT_EMPTY, CHAR_INDEX, CHAR_UNLOCK_BITS, CHAR_UNLOCK_BYTES, DEFAULT_CHARACTERS, GAIDEN_RECORDS, GAME_NAME,
+from .data import (CURRENT_STAGE_RECORD, MSG_NEW_OFFICER, MSG_NEW_OFFICER_ORIGINAL, MSG_NEW_SCENARIO,
+                   MSG_NEW_SCENARIO_ORIGINAL, MSG_SLOT_LEN, ABILITIES, ABILITIES_IN_USE, ABILITY_LEVELS, ABILITY_NONE, ABILITY_SLOT_EMPTY, CHAR_INDEX, CHAR_UNLOCK_BITS, CHAR_UNLOCK_BYTES, DEFAULT_CHARACTERS, GAIDEN_RECORDS, GAME_NAME,
                    CHAR_RECORD_SIZE, CHAR_RECORDS, GROWTH_POINTS, KO_COUNT, WEAPON_SLOT_SIZE, WEAPON_SLOTS,
                    WEAPON_SLOTS_OFFSET, weapon_id, KO_MILESTONES, PLAYER_HP, PLAYER_MUSOU, PLAYER_UNIT_MARKER, ROSTER, SERIAL, STAGE_RECORD_SIZE, STAGE_RECORDS, STAGE_STATUS_CLEARED, STAGE_STATUS_LOCKED, STAGE_STATUS_OPEN, STORY_RECORDS,
                    STAGE_STATUS_OFFSET, STAGES_PER_STORY, STORIES, STORY_PROGRESS, VANILLA_UNLOCKS)
@@ -19,6 +20,12 @@ from .locations import (LOCATION_NAME_TO_ID, ability_location, WEAPON_LOCATIONS,
 from .pine import Pine, PineError, bits_to_set, set_to_bits
 
 POLL_SECONDS = 0.5
+
+# Stage record -> the location its clear sends; and which records recruit someone on clear.
+RECORD_TO_LOCATION = {rec: LOCATION_NAME_TO_ID[stage_location(s, n)] for (s, n), rec in STORY_RECORDS.items()}
+RECORD_TO_LOCATION.update({rec: LOCATION_NAME_TO_ID[gaiden_stage_location(s, n)]
+                           for (s, n), rec in GAIDEN_RECORDS.items()})
+RECRUIT_RECORDS = {STORY_RECORDS[(u.story, u.stage)] for u in VANILLA_UNLOCKS.values() if u.kind == "stage"}
 ID_TO_ITEM = {v: k for k, v in ITEM_NAME_TO_ID.items()}
 
 
@@ -60,6 +67,7 @@ class WarriorsOrochiContext(CommonContext):
         self.was_alive = False       # player HP was above 0 on the last in-battle tick
         self.link_kill = False       # our current death came from DeathLink: don't echo it
         self.doomed = False          # DeathLink received: HP is held at 1 until the next hit lands
+        self.notice_key = None       # (stage record, text) currently written into the game's notices
 
     # -- server side ------------------------------------------------------------
     async def server_auth(self, password_requested: bool = False):
@@ -80,6 +88,10 @@ class WarriorsOrochiContext(CommonContext):
             self.held_abilities = state.get("held_abilities", {})
             self.goal_sent = False
             asyncio.create_task(self.update_death_link(bool(self.slot_data.get("death_link"))))
+            self.notice_key = None
+            # Ask what every one of our checks holds, for the in-game "Sent X to Y" notices.
+            asyncio.create_task(self.send_msgs([{"cmd": "LocationScouts", "create_as_hint": 0,
+                                                 "locations": sorted(self.server_locations)}]))
 
     def on_deathlink(self, data: dict) -> None:
         super().on_deathlink(data)
@@ -222,6 +234,50 @@ class WarriorsOrochiContext(CommonContext):
                     slots[k] = ABILITY_SLOT_EMPTY
             self.pine.write_bytes(ABILITIES_IN_USE, bytes(slots))
 
+    # -- in-game notices -----------------------------------------------------------
+    def notice_text(self, location_id: int) -> Optional[str]:
+        """'Sent [01Hookshot] to Alex!' for the item on a check, trimmed to fit the game's text slot."""
+        info = self.locations_info.get(location_id)
+        if info is None:
+            return None
+        item = self.item_names.lookup_in_slot(info.item, info.player)
+        if info.player == self.slot:
+            head, tail = "Found ", "!"
+        else:
+            head, tail = "Sent ", f" to {self.player_names.get(info.player, 'someone')}!"
+        room = MSG_SLOT_LEN - len(head) - len(tail) - 4   # 4 = "[01" + "]"
+        if room < 6:                                          # very long player name: drop it
+            tail, room = "!", MSG_SLOT_LEN - len(head) - 5
+        if len(item) > room:
+            item = item[:room - 2] + ".."
+        return f"{head}[01{item}]{tail}"
+
+    def write_notice(self, addr: int, text: str) -> None:
+        data = text.encode("ascii", "replace")[:MSG_SLOT_LEN] + b"\0"
+        self.pine.write_bytes(addr, data)
+
+    def update_notices(self) -> None:
+        """During a battle, put that stage's check item into the game's end-of-stage notices."""
+        # Only change text while a battle runs: the notices show after it ends, so leave them alone then.
+        if not self.in_battle():
+            return
+        rec = self.pine.read8(CURRENT_STAGE_RECORD)
+        loc = RECORD_TO_LOCATION.get(rec)
+        text = self.notice_text(loc) if loc is not None and loc not in self.checked_locations else None
+        key = (rec, text)
+        if key == self.notice_key:
+            return
+        if text is None:
+            self.write_notice(MSG_NEW_OFFICER, MSG_NEW_OFFICER_ORIGINAL)
+            self.write_notice(MSG_NEW_SCENARIO, MSG_NEW_SCENARIO_ORIGINAL)
+        elif rec in RECRUIT_RECORDS:   # the stage recruits someone: the "new officer" notice will show
+            self.write_notice(MSG_NEW_OFFICER, text)
+            self.write_notice(MSG_NEW_SCENARIO, MSG_NEW_SCENARIO_ORIGINAL)
+        else:
+            self.write_notice(MSG_NEW_OFFICER, MSG_NEW_OFFICER_ORIGINAL)
+            self.write_notice(MSG_NEW_SCENARIO, text)
+        self.notice_key = key
+
     async def game_tick(self) -> None:
         names = self.received_names()
 
@@ -300,6 +356,10 @@ class WarriorsOrochiContext(CommonContext):
             self.pine.write32(GROWTH_POINTS, min(gp + 1000 * (filler - self.applied_filler), 9_999_999))
             self.applied_filler = filler
             self._save_state()
+
+        # 3a. In-game "Sent X to Y" notices.
+        if self.slot_data.get("in_game_notices", True):
+            self.update_notices()
 
         # 3b. Battle-only effects.
         await self.battle_tick(names)

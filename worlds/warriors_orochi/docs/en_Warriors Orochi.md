@@ -39,6 +39,12 @@ Recover, Refill) are shuffled. Earning one in-game sends "Earn Ability: <name>";
 until its "Ability: <name>" item arrives, and any levels earned meanwhile are kept.
 The Earn Ability checks only hold filler, since exactly how the game hands abilities out is not mapped yet.
 
+## In-Game Notices
+On by default. While you play a stage, the client rewrites the game's own end-of-stage notice
+("<officer> has become available for use.") to say what that stage's check holds, for example
+"Sent Hookshot to Alex!" or "Found Okuni!". Stages where nobody joins use the
+"A new scenario has become available." notice instead.
+
 ## Death Link
 With Death Link on, falling in battle kills the other linked players, and their deaths drop you
 to 1 health (held there) so the next hit finishes you. Deaths received outside a battle are ignored.

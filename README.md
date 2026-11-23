@@ -20,6 +20,7 @@ played on **PCSX2** (tested on v2.8.2). The client talks to PCSX2 over its built
 | `fourth_weapon_checks` | A check for each character's 4th weapon |
 | `ko_milestone_max` | Checks for 100 / 200 / 300 / 500 / 750 / 1000 KOs in a battle |
 | `trap_chance` | Musou Drain and Low Health traps |
+| `in_game_notices` | The game's own end-of-stage notice says what you found, e.g. "Sent Hookshot to Alex!" (on by default) |
 | `death_link` | Supported (a received death leaves you at 1 HP; the next hit finishes you) |
 
 Full details: [game page](worlds/warriors_orochi/docs/en_Warriors%20Orochi.md) and

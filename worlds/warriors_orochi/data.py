@@ -88,6 +88,16 @@ ABILITIES = ["Vitality", "Focus", "Potence", "Fortitude", "Impulse", "Cavalier",
              "Karma", "Power", "Speed", "Technique", "Boost", "Awakening",
              "Acclaim", "Recuperate", "Conserve", "Adrenalin", "Recover", "Refill"]
 
+# In-game notices (CONFIRMED 2026-11-22). The game looks its pop-up texts up through a pointer table at
+# 0x331F18; the strings below live in the main executable's data, so they stay put. Text supports
+# printf %s and colour codes like "[01word]" (01 = red). Each slot holds 47 characters + terminator.
+MSG_NEW_OFFICER = 0x0032E780     # "%s has become available for use."  (stage-clear recruit notice)
+MSG_NEW_SCENARIO = 0x0032E7B0    # "A new scenario has become available."
+MSG_SLOT_LEN = 47
+MSG_NEW_OFFICER_ORIGINAL = "%s has become available for use."
+MSG_NEW_SCENARIO_ORIGINAL = "A new scenario has become available."
+CURRENT_STAGE_RECORD = 0x004CD4F4  # u8 stage record index of the battle being played (CONFIRMED: 35 = Shu 1, 47 = Wei 1)
+
 # Weapon inventory inside each character record (CONFIRMED 2026-11-22 via a weapon pickup;
 # saved to the record when returning to camp). Slot = u16 weapon id + 20 bytes of attributes.
 WEAPON_SLOTS_OFFSET = 0x18

@@ -190,4 +190,5 @@ class WarriorsOrochiWorld(World):
             "fourth_weapon_checks": bool(self.options.fourth_weapon_checks),
             "stage_locks": bool(self.options.stage_locks),
             "ability_shuffle": bool(self.options.ability_shuffle),
+            "in_game_notices": bool(self.options.in_game_notices),
         }

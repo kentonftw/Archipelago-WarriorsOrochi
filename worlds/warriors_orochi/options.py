@@ -104,6 +104,14 @@ class AbilityShuffle(Toggle):
     display_name = "Ability Shuffle"
 
 
+class InGameNotices(DefaultOnToggle):
+    """
+    Rewrites the game's own end-of-stage notices ("X has become available for use.") to say what
+    you found, e.g. "Sent Hookshot to Alex!".
+    """
+    display_name = "In-Game Notices"
+
+
 class DeathLink(Toggle):
     """
     When you die, everyone dies. Of course the reverse is true too.
@@ -130,5 +138,6 @@ class WarriorsOrochiOptions(PerGameCommonOptions):
     fourth_weapon_checks: FourthWeaponChecks
     stage_locks: StageLocks
     ability_shuffle: AbilityShuffle
+    in_game_notices: InGameNotices
     show_unlock_messages: ShowUnlockMessages
     death_link: DeathLink
