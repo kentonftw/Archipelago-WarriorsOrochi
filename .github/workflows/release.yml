@@ -5,7 +5,7 @@ name: Release
 on:
   push:
     branches: [main]
-    paths: ["worlds/warriors_orochi/archipelago.json"]
+    paths: ["worlds/warriors_orochi/archipelago.json", ".github/workflows/release.yml"]
   workflow_dispatch:
 
 permissions:
@@ -34,7 +34,9 @@ jobs:
       - name: Get Archipelago (needed to run the tests and build the tracker)
         run: |
           git clone --depth 1 https://github.com/ArchipelagoMW/Archipelago.git ap
-          pip install -r ap/requirements.txt pillow pytest
+          # Only what generation, the tests and the tracker builder need (skip GUI and Windows-only packages).
+          grep -v -i -E "kivy|pymem|pyshortcuts" ap/requirements.txt > ap/req-ci.txt
+          pip install -r ap/req-ci.txt pillow pytest
           cp -r worlds/warriors_orochi ap/worlds/
 
       - name: Run the world's tests
