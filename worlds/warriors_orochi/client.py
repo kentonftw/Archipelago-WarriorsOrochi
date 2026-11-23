@@ -181,17 +181,30 @@ class WarriorsOrochiContext(CommonContext):
         self.was_alive = hp > 0
 
 
+    def stage_allowed(self, story: str, n: int, names) -> bool:
+        """Mirrors WarriorsOrochiWorld.stage_rule: the stage is in logic with what we have."""
+        if self.slot_data.get("stage_locks") and names.count(stage_unlock_name(story)) < n - 1:
+            return False
+        if self.slot_data.get("lock_out_of_logic_stages"):
+            pool = [c for c in self.slot_data.get("shuffled_characters", []) if VANILLA_UNLOCKS[c].story == story]
+            req = min(self.slot_data.get("story_character_requirement", 4), len(pool))
+            need = req * (n - 1) // (STAGES_PER_STORY - 1)
+            have = len(set(pool) & set(names))
+            if have < need:
+                return False
+        return True
+
     def enforce_stage_locks(self, names) -> None:
-        """Stage N and Gaiden N of a story need N-1 "Progressive <Story> Stage" items.
-        The game opens stages itself (status 2); we hide the ones not yet allowed (status 0)
-        and give them back once the item arrives. Cleared stages (3) are never touched."""
+        """Hide stages that are not in logic yet. The game opens stages itself (status 2); we hide
+        the ones not allowed (status 0) and give them back once allowed. Cleared stages (3) are
+        never touched."""
         recs = []
         for story in STORIES:
-            allowed = 1 + names.count(stage_unlock_name(story))
             for n in range(2, STAGES_PER_STORY + 1):
+                ok = self.stage_allowed(story, n, names)
                 for table in (STORY_RECORDS, GAIDEN_RECORDS):
                     if (story, n) in table:
-                        recs.append((table[(story, n)], n <= allowed))
+                        recs.append((table[(story, n)], ok))
         addrs = [STAGE_RECORDS + rec * STAGE_RECORD_SIZE + STAGE_STATUS_OFFSET for rec, _ in recs]
         changed = False
         for (rec, ok), addr, status in zip(recs, addrs, self.pine.read8_many(addrs)):
@@ -301,7 +314,7 @@ class WarriorsOrochiContext(CommonContext):
         self.last_bits = set_to_bits(desired, CHAR_UNLOCK_BYTES)
 
         # 1b. Real stage locks.
-        if self.slot_data.get("stage_locks"):
+        if self.slot_data.get("stage_locks") or self.slot_data.get("lock_out_of_logic_stages"):
             self.enforce_stage_locks(names)
 
         # 2. Story progress -> stage clear checks.

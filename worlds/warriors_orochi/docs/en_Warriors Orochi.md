@@ -27,6 +27,13 @@ With Trap Chance above 0, some filler becomes traps instead:
 
 Traps wait until you are in a battle.
 
+## Locked Stages
+On by default (Lock Out-of-Logic Stages): the client hides every story and Gaiden stage you are not
+in logic for yet, so you can't play ahead of your items. A stage needs enough of its story's
+characters (Story Character Requirement), plus its stage items when Stage Locks is on. Hidden stages
+reappear as soon as you have what they need; stages you already cleared are never hidden.
+Keep the client connected while you play, since it is what hides the stages.
+
 ## Stage Locks
 With Stage Locks on, each story has 7 "Progressive <Story> Stage" items. Stage N and Gaiden N of a
 story only open once you have N-1 of that story's items and have cleared the stage before it.

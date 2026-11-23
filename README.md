@@ -15,6 +15,7 @@ played on **PCSX2** (tested on v2.8.2). The client talks to PCSX2 over its built
 |---|---|
 | `stories_required` | Clear 1-4 stories to win (default 4) |
 | `story_character_requirement` | How many of a story's characters logic expects before its final stage |
+| `lock_out_of_logic_stages` | Hides stages you are not in logic for yet, so you can't play ahead (on by default) |
 | `stage_locks` | Really locks stages behind "Progressive <Story> Stage" items (works in Story and Free Mode) |
 | `ability_shuffle` | Abilities stay hidden until their item arrives |
 | `fourth_weapon_checks` | A check for each character's 4th weapon |

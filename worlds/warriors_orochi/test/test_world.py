@@ -196,3 +196,11 @@ class TestAbilityShuffle(WarriorsOrochiTestBase):
         self.assertIn("Ability: Speed", names)
         speed = self.multiworld.get_location("Earn Ability: Speed", self.player)
         self.assertEqual(speed.progress_type, LocationProgressType.EXCLUDED)
+
+
+class TestLockOutOfLogicSlotData(WarriorsOrochiTestBase):
+    def test_client_gets_what_it_needs(self) -> None:
+        data = self.world.fill_slot_data()
+        self.assertTrue(data["lock_out_of_logic_stages"])
+        self.assertEqual(data["story_character_requirement"], 4)
+        self.assertTrue(data["shuffled_characters"])

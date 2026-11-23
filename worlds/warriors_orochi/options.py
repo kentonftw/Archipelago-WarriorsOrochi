@@ -94,6 +94,16 @@ class StageLocks(Toggle):
     display_name = "Stage Locks"
 
 
+class LockOutOfLogicStages(DefaultOnToggle):
+    """
+    Hides every story and Gaiden stage you are not in logic for yet, so you can't play ahead.
+    A stage needs enough of its story's characters (see Story Character Requirement) and, with
+    Stage Locks on, its "Progressive <Story> Stage" items. Hidden stages reappear as soon as you
+    have what they need. Stages you already cleared are never hidden.
+    """
+    display_name = "Lock Out-of-Logic Stages"
+
+
 class AbilityShuffle(Toggle):
     """
     Shuffles the 18 army-wide abilities (Vitality, Speed, Karma, ...). Earning an ability in-game
@@ -137,6 +147,7 @@ class WarriorsOrochiOptions(PerGameCommonOptions):
     trap_chance: TrapChance
     fourth_weapon_checks: FourthWeaponChecks
     stage_locks: StageLocks
+    lock_out_of_logic_stages: LockOutOfLogicStages
     ability_shuffle: AbilityShuffle
     in_game_notices: InGameNotices
     show_unlock_messages: ShowUnlockMessages
